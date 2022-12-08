@@ -14,8 +14,10 @@ asar:
 asarUnpack:
   - '**/*.{node}'
 extraResources:
-  from: ./scrcpy/
-  to: scrcpy
+  - from: ./scrcpy/
+    to: scrcpy
+  - from: ./src/renderer/logo.webp
+    to: img/logo.webp
 afterSign: build/notarize.js
 win:
   executableName: terminal_remote_control
@@ -24,6 +26,8 @@ nsis:
   shortcutName: 远程控制利云终端
   uninstallDisplayName: ${productName}
   createDesktopShortcut: always
+  # oneClick: false
+  # allowToChangeInstallationDirectory: true
 mac:
   entitlementsInherit: build/entitlements.mac.plist
   extendInfo:
@@ -44,5 +48,9 @@ appImage:
   artifactName: ${name}-${version}.${ext}
 npmRebuild: false
 publish:
-  provider: generic
-  url: https://example.com/auto-updates
+  provider: github
+  owner: ChnJerry
+  repo: LyMachineRemoteControl
+  private: true
+  token: PQ+u/GHpzb1NwDd6+vu2qrd+Lt+HbY+VfNH6Re5dS/k
+  releaseType: release

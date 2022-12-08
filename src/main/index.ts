@@ -8,7 +8,10 @@ function createWindow(): void {
     width: 900,
     height: 480,
     show: false,
+    frame: false,
     autoHideMenuBar: true,
+    // 固定宽高
+    resizable: false,
     ...(process.platform === 'linux'
       ? {
           icon: path.join(__dirname, '../../build/icon.png')
@@ -21,7 +24,6 @@ function createWindow(): void {
       contextIsolation: false
     }
   })
-  // mainWindow.webContents.openDevTools()
 
   mainWindow.on('ready-to-show', () => {
     mainWindow.show()
@@ -37,6 +39,18 @@ function createWindow(): void {
   ipcMain.on('destroy',()=>{
     mainWindow.destroy()
   })
+  ipcMain.on("window-min", ()=> {
+    mainWindow.minimize()
+  });
+  ipcMain.on("close", ()=> {
+    mainWindow.close()
+  });
+  ipcMain.on("openDev", () => {
+    mainWindow.webContents.openDevTools()
+  })
+  ipcMain.on('app_version', (event) => {
+    event.sender.send('app_version', { version: app.getVersion() });
+  });
   // HMR for renderer base on electron-vite cli.
   // Load the remote URL for development or the local html file for production.
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
@@ -44,6 +58,7 @@ function createWindow(): void {
   } else {
     mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'))
   }
+
 }
 
 // This method will be called when Electron has finished
@@ -52,7 +67,7 @@ function createWindow(): void {
 app.whenReady().then(() => {
   // Set app user model id for windows
   electronApp.setAppUserModelId('com.electron')
-
+  
   // Default open or close DevTools by F12 in development
   // and ignore CommandOrControl + R in production.
   // see https://github.com/alex8088/electron-toolkit/tree/master/packages/utils

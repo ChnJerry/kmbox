@@ -1,6 +1,6 @@
 {
   "name": "terminal_remote_control",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "An Electron application with Vue and TypeScript",
   "main": "./out/main/index.js",
   "author": "kmservice",
@@ -25,7 +25,8 @@
     "electron-updater": "^4.6.5",
     "element-plus": "^2.2.21",
     "ini": "^3.0.1",
-    "mssql": "^9.0.1"
+    "mssql": "^9.0.1",
+    "ping": "^0.4.2"
   },
   "devDependencies": {
     "@electron-toolkit/tsconfig": "^1.0.1",
@@ -46,5 +47,6 @@
     "vite": "^3.1.6",
     "vue": "^3.2.40",
     "vue-tsc": "^0.40.13"
-  }
+  },
+  "__npminstall_done": false
 }
