@@ -1,5 +1,5 @@
 <template>
-  <el-table v-loading="loading" :element-loading-text="loadingText" :data="filterTableData" stripe :max-height="400"
+  <el-table v-loading="loading" :element-loading-text="loadingText" :data="filterTableData" :max-height="450"
     style="width: 100%">
     <el-table-column label="终端名称" width="200px">
       <template #default="scope">
@@ -49,7 +49,7 @@
   </el-table>
   <!-- 重启确认对话框区域 -->
   <el-dialog v-model="dialogVisible" title="提示" width="30%" align-center center>
-    <span>确认重启利云终端 <text style="color: cornflowerblue">{{ targetName }}</text> 吗？</span>
+    <span style="display: flex; justify-content: center">确认重启利云终端 <text style="color: cornflowerblue">{{ targetName }}</text> 吗？</span>
     <template #footer>
       <span class="dialog-footer">
         <el-button @click="dialogVisible = false">取消</el-button>
@@ -59,10 +59,12 @@
       </span>
     </template>
   </el-dialog>
+  <el-button style="position: absolute; bottom: 22px; right: 2px" type="info" link
+          >{{ config.DB.tyVersion }}</el-button>
 </template>
 
 <script lang="ts" setup>
-import { reactive, ref, computed, onMounted } from 'vue'
+import { reactive, ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { ElMessage, ElNotification, ElTag } from 'element-plus'
 
 let loading = ref(false)
@@ -183,8 +185,6 @@ const openNotification = (errmsg) => {
 }
 const exec = require('child_process').exec
 // 本地需要启动的后台服务名称
-// let cmdStr = 'adb connect 192.168.0.100'
-// let cmdPath = 'D:'
 let workerProcess
 // 执行命令行，如果命令不需要路径，或就是项目根目录，则不需要cwd参数：
 // workerProcess = exec(cmdStr, {cwd: cmdPath})
@@ -230,18 +230,7 @@ function intervalPingState() {
       if(isAlive) item.pingStatus = '在线'
       else item.pingStatus = '离线'
     })
-    // exec('ping ' + item.MachineIp + ' -n 1', (error, stdout, stderr) => {
-    //   if (error || stderr) {
-    //     item.pingStatus = '离线'
-    //   } else if (stdout.includes('ms')) {
-    //     item.pingStatus = '在线'
-    //   } else {
-    //     item.pingStatus = '离线'
-    //   }
-    // })
   })
-
-
 
 }
 function intervalADBState() {
@@ -265,8 +254,8 @@ function intervalADBState() {
     }
   })
 }
-setInterval(intervalPingState, 8000)
-setInterval(intervalADBState, 8000)
+const pingStatus = setInterval(intervalPingState, 8000)
+const adbStatus = setInterval(intervalADBState, 8000)
 
 const { ipcRenderer } = require("electron")
 ipcRenderer.on("close", () => {
@@ -304,5 +293,9 @@ onMounted(() => {
   // window.addEventListener('resize', () => {
   //   maxHeight = window.innerHeight - 225
   // })
+})
+onBeforeUnmount(()=>{
+  clearInterval(pingStatus)
+  clearInterval(adbStatus)
 })
 </script>

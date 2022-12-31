@@ -2,20 +2,23 @@ import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import * as path from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 
+let mainWindow
 function createWindow(): void {
   // Create the browser window.
-  const mainWindow = new BrowserWindow({
-    width: 900,
-    height: 480,
+  mainWindow = new BrowserWindow({
+    width: 1200,
+    height: 600,
+    minWidth: 1100,
+    minHeight: 550,
     show: false,
     frame: false,
     autoHideMenuBar: true,
     // 固定宽高
-    resizable: false,
+    // resizable: false,
     ...(process.platform === 'linux'
       ? {
-          icon: path.join(__dirname, '../../build/icon.png')
-        }
+        icon: path.join(__dirname, '../../build/icon.png')
+      }
       : {}),
     webPreferences: {
       preload: path.join(__dirname, '../preload/index.js'),
@@ -32,17 +35,22 @@ function createWindow(): void {
     shell.openExternal(details.url)
     return { action: 'deny' }
   })
-  mainWindow.on("close", (e)=>{
+  mainWindow.on("close", (e) => {
     e.preventDefault()
     mainWindow.webContents.send("close")
   })
-  ipcMain.on('destroy',()=>{
+  ipcMain.on('destroy', () => {
     mainWindow.destroy()
   })
-  ipcMain.on("window-min", ()=> {
+  ipcMain.on("window-min", () => {
     mainWindow.minimize()
   });
-  ipcMain.on("close", ()=> {
+  ipcMain.on("window-max", () => {
+    if (mainWindow.isMaximized()) {
+      mainWindow.restore()
+    } else mainWindow.maximize()
+  });
+  ipcMain.on("close", () => {
     mainWindow.close()
   });
   ipcMain.on("openDev", () => {
@@ -58,16 +66,26 @@ function createWindow(): void {
   } else {
     mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'))
   }
-
 }
-
+// 限制只能打开一个实例，且打开第二个的时候唤醒第一个实例
+const gotTheLock = app.requestSingleInstanceLock()
+if (!gotTheLock) {
+  app.quit()
+} else {
+  app.on('second-instance', () => {
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore()
+      mainWindow.focus()
+    }
+  })
+}
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
   // Set app user model id for windows
   electronApp.setAppUserModelId('com.electron')
-  
+
   // Default open or close DevTools by F12 in development
   // and ignore CommandOrControl + R in production.
   // see https://github.com/alex8088/electron-toolkit/tree/master/packages/utils
