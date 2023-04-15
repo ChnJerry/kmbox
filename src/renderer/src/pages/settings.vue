@@ -1,11 +1,16 @@
 <template>
     <el-card class="box-card">
         <h3>基本设置</h3>
-        <el-alert title="修改基本设置需保存并重启程序后生效" type="info" show-icon :closable="false" />
+        <!-- <el-alert title="修改基本设置需保存并重启程序后生效" type="info" show-icon :closable="false" /> -->
         <div class="card-title">
-            锋云IP
+            锋云服务器 IP
         </div>
         <el-autocomplete v-model="settings.basicConfig.fyIP" :fetch-suggestions="querySearchFyIps"
+            class="inline-input w-50" />
+        <div class="card-title">
+            网关服务器 IP
+        </div>
+        <el-autocomplete v-model="settings.basicConfig.gatewayIP" :fetch-suggestions="querySearchFyIps"
             class="inline-input w-50" />
         <div class="card-title">
             利云数据库地址
@@ -20,7 +25,7 @@
             利云数据库密码
         </div>
         <el-input v-model="settings.basicConfig.lyDbPasswd" class="inline-input w-50" />
-        <el-button type="primary" plain style="margin-top: 10px;" @click="transSaveConfigToApp">保存</el-button>
+        <el-button type="primary" plain style="margin-top: 10px;" @click="saveConfig">保存</el-button>
     </el-card>
 
     <el-card class="box-card">
@@ -28,11 +33,13 @@
         <div>
             <el-tooltip :content="killAdbServerBeforeQuitTip" placement="right" effect="light">
                 <el-checkbox v-model="settings.lyClientManage.killAdbServerBeforeQuit" label="关闭程序后终止 ADB 服务"
-                    size="large" />
+                    size="large"
+                    @change="changeOneConfig('appConfig', 'killAdbServerBeforeQuit', settings.lyClientManage.killAdbServerBeforeQuit, true)" />
             </el-tooltip>
         </div>
         <div>
-            <el-checkbox v-model="settings.lyClientManage.sortByIP" label="默认以IP地址排序" size="large" />
+            <el-checkbox v-model="settings.lyClientManage.sortByIP" label="默认以IP地址排序" size="large"
+                @change="changeOneConfig('appConfig', 'sortByIP', settings.lyClientManage.sortByIP, true)" />
         </div>
     </el-card>
     <el-card class="box-card" :body-style="{ width: '50vw' }">
@@ -42,12 +49,17 @@
         </div>
         <div class="inline-input">
             <el-input v-model="settings.fyConfig.marquee" type="textarea" placeholder="编辑区域" autosize show-word-limit
-                maxlength="140" resize="none" />
-            <el-select class="m-2" placeholder="模板" style="margin-top: 10px;" @change="bindMarqueeSelectChange">
+                maxlength="140" resize="none" :disabled="editMarqueeAreaDisabled" />
+            <el-select class="m-2" placeholder="模板" style="margin-top: 10px;" @change="bindMarqueeSelectChange"
+                :disabled="editMarqueeAreaDisabled">
                 <el-option v-for="(item, index) in data.suggestMarquees" :key="index" :value="item" />
             </el-select>
-            <el-button type="primary" plain style="margin-top: 10px;" @click="getOrSetMarquee('set', settings.fyConfig.marquee)">保存</el-button>
+            <el-button type="primary" plain style="margin-top: 10px;" @click="setMarquee"
+                :disabled="editMarqueeAreaDisabled ? editMarqueeAreaDisabled : saveMarqueeButtonDisabled">保存</el-button>
         </div>
+        监控窗口
+        <el-switch v-model="settings.fyConfig.monitorWindow" class="ml-2" style="--el-switch-on-color: #13ce66"
+            @change="handleMonitorWindowSwitchChange" />
 
     </el-card>
     <!-- <el-card class="box-card">
@@ -60,23 +72,32 @@
 <script lang="ts" setup>
 import { ElMessage } from 'element-plus';
 import { reactive, ref, onMounted } from 'vue';
+import { getAppConfig, changeOneConfig, saveConfigToLocal } from '@renderer/bridge/appConfig.js'
+import { fyMarquee } from '@renderer/bridge/connection.js'
+import { newWindow } from '@renderer/controller/openWindow.js'
+import { closeWindow } from '@renderer/controller/winSizeChange.js'
+
 onMounted(() => {
-    getOrSetMarquee('get')
+    fyMarquee.get().then((result: string) => settings.fyConfig.marquee = result).catch((_err) => editMarqueeAreaDisabled.value = true)
 })
 const killAdbServerBeforeQuitTip = "由于1台客户端只能同时被1台电脑连接，如果您想在关闭程序后继续使用另一台电脑连接，请勾选"
+const editMarqueeAreaDisabled = ref(false)
 const settings = reactive({
     basicConfig: {
         fyIP: '',
+        gatewayIP: '',
         lyDbAddr: '',
         lyDbUser: 'sa',
-        lyDbPasswd: ''
+        lyDbPasswd: '',
+        isReception: false
     },
     lyClientManage: {
         killAdbServerBeforeQuit: false,
         sortByIP: false
     },
     fyConfig: {
-        marquee: ''
+        marquee: '',
+        monitorWindow: false,
     }
 })
 const data = reactive({
@@ -85,15 +106,14 @@ const data = reactive({
         '本场所营业时间为 13:00 - 02:00'
     ]
 })
-const { appConfig } = defineProps({
-    appConfig: Object
-})
-const emit = defineEmits(['writeConfigEvent'])
-console.log(appConfig)
+const appConfig = getAppConfig()
 settings.basicConfig.fyIP = appConfig?.appConfig.fyIP
+settings.basicConfig.gatewayIP = appConfig?.appConfig.gatewayIP
 settings.basicConfig.lyDbAddr = appConfig?.DB.serverIP
 settings.basicConfig.lyDbUser = appConfig?.DB.DBUser
 settings.basicConfig.lyDbPasswd = appConfig?.DB.DBPassword
+settings.lyClientManage.sortByIP = appConfig?.appConfig.sortByIP
+settings.lyClientManage.killAdbServerBeforeQuit = appConfig?.appConfig.killAdbServerBeforeQuit
 interface IpItem {
     id: number,
     value: string
@@ -124,39 +144,22 @@ const createFilter = (queryString: string) => {
 const bindMarqueeSelectChange = (marquee: string) => {
     settings.fyConfig.marquee = marquee
 }
-const getOrSetMarquee = async (type: string, text?: string) => {
-    const mysql = require('mysql')
-    var connection = mysql.createConnection({
-        host: appConfig?.appConfig.fyIP,
-        user: 'admin',
-        password: 'admin',
-        database: 'eVideoKTV'
-    })
-    if (type == 'get') {
-        await connection.connect();
-        await connection.query('SELECT Param_Str FROM `eVideoKTV`.`FY_SYSPARAM` WHERE ID=10', function (error: any, results: any) {
-            if (error) return
-            settings.fyConfig.marquee = results[0].Param_Str
-            connection.end()
-        })
-    }
-    else if(type == 'set'){
-        await connection.connect();
-        await connection.query(`UPDATE FY_SYSPARAM SET Param_Str = '${text}' WHERE ID = '10'`, function (error: any, _results: any) {
-            if (error) {
-                ElMessage.error({ message: error, offset: 50 })
-                return
-            }
-            ElMessage.success({ message: '保存走马灯成功', offset: 50 })
-            connection.end()
-        })
-    }
+const saveMarqueeButtonDisabled = ref(false)
+const setMarquee = () => {
+    saveMarqueeButtonDisabled.value = true
+    fyMarquee.set(settings.fyConfig.marquee).then((result) => ElMessage.success({ message: result, offset: 50 })).catch((err) => ElMessage.error({ message: err, offset: 50 })).finally(saveMarqueeButtonDisabled.value = false)
 }
-const transSaveConfigToApp = () =>{
-    if(appConfig?.appConfig.fyIP != settings.basicConfig.fyIP) emit('writeConfigEvent', 'appConfig', 'fyIP', settings.basicConfig.fyIP)
-    if(appConfig?.DB.serverIP != settings.basicConfig.lyDbAddr) emit('writeConfigEvent', 'DB', 'serverIP', settings.basicConfig.lyDbAddr)
-    if(appConfig?.DB.DBUser != settings.basicConfig.lyDbUser) emit('writeConfigEvent', 'DB', 'DBUser', settings.basicConfig.lyDbUser)
-    if(appConfig?.DB.DBPassword != settings.basicConfig.lyDbPasswd) emit('writeConfigEvent', 'DB', 'DBPassword', settings.basicConfig.lyDbPasswd)
+const saveConfig = () => {
+    if (appConfig?.appConfig.fyIP != settings.basicConfig.fyIP) changeOneConfig('appConfig', 'fyIP', settings.basicConfig.fyIP)
+    if (appConfig?.appConfig.gatewayIP != settings.basicConfig.gatewayIP) changeOneConfig('appConfig', 'gatewayIP', settings.basicConfig.gatewayIP)
+    if (appConfig?.DB.serverIP != settings.basicConfig.lyDbAddr) changeOneConfig('DB', 'serverIP', settings.basicConfig.lyDbAddr)
+    if (appConfig?.DB.DBUser != settings.basicConfig.lyDbUser) changeOneConfig('DB', 'DBUser', settings.basicConfig.lyDbUser)
+    if (appConfig?.DB.DBPassword != settings.basicConfig.lyDbPasswd) changeOneConfig('DB', 'DBPassword', settings.basicConfig.lyDbPasswd)
+    saveConfigToLocal().then((res) => ElMessage.success({ message: res, offset: 50 })).catch((err) => ElMessage.error({ message: err, offset: 50 }))
+}
+const handleMonitorWindowSwitchChange = (value) => {
+    if (value) newWindow()
+    else closeWindow('fyMonitorWindow')
 }
 </script>
 <style scoped>
@@ -167,6 +170,7 @@ const transSaveConfigToApp = () =>{
     align-items: flex-start;
     margin-bottom: 15px;
 }
+
 .card-title {
     color: gray;
     margin: 7px 0;

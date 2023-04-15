@@ -10,29 +10,37 @@
     </div>
     <div v-show="show" v-loading="loading" :element-loading-text="loadingText">
         <div v-if="loadBaseInfoCount == 2">
-            <el-descriptions title="锋云信息" :column="5" direction="vertical">
-                <el-descriptions-item label="服务器名称">{{ serverVersion['基本信息']['服务器名称'] }}</el-descriptions-item>
-                <el-descriptions-item label="场所名称">{{ reginfo['regname'] }}</el-descriptions-item>
-                <el-descriptions-item label="系统版本">{{ serverVersion['基本信息']['主版本号'] }}</el-descriptions-item>
-                <el-descriptions-item label="授权点数">{{ reginfo['totalnum'] }}</el-descriptions-item>
-                <el-descriptions-item label="开机时间" :span="2">{{ serverVersion['基本信息']['更新时间'] }}</el-descriptions-item>
-                <el-descriptions-item label="硬件型号">
-                    <el-tag size="small">
-                        {{ reginfo['dogid'].slice(0, 4) == '0349' ? 'EVS7800/EVS7900/EVS7500' : '' }}
-                        {{ reginfo['dogid'].slice(0, 4) == '0749' ? 'EVS8000/EVS8100/EVS7600' : '' }}
-                        {{ reginfo['dogid'].slice(0, 4) == '0849' ? 'EVS8500/EVS8600' : '' }}
-                    </el-tag>
-                </el-descriptions-item>
-                <el-descriptions-item label="预订电话">{{ reginfo['booktel'] }}
-                </el-descriptions-item>
-                <el-descriptions-item label="授权方式">{{ reginfo['regtype'] }}
-                </el-descriptions-item>
-                <el-descriptions-item v-if="reginfo['regtype'] == '临时授权'" label="授权剩余时间">{{ `${reginfo['ramainhours']}
+            <div class="fyinfo-header">
+                <div class="device-pic">
+                    <img src="http://open-doc.ktvme.cn/uploads/projects/chenjiarui/1737aca12bf3c1b8.png" width="140" />
+                    <div class="text">
+                        {{ reginfo['dogid'].slice(0, 4) == '0349' ? 'EVS7800系列' : '' }}
+                        {{ reginfo['dogid'].slice(0, 4) == '0749' ? 'EVS8000系列' : '' }}
+                        {{ reginfo['dogid'].slice(0, 4) == '0849' ? 'EVS8500系列' : '' }}
+                    </div>
+                    <div class="text">
+                        {{ serverVersion['基本信息']['服务器名称'] }}
+                    </div>
+                </div>
+                <el-descriptions title="锋云服务器" :column="5" direction="vertical" style="flex: 1">
+                    <el-descriptions-item label="场所名称">{{ reginfo['regname'] }}</el-descriptions-item>
+                    <el-descriptions-item label="系统版本">{{ serverVersion['基本信息']['主版本号'] }}</el-descriptions-item>
+                    <el-descriptions-item label="授权点数">{{ reginfo['totalnum'] }}</el-descriptions-item>
+                    <el-descriptions-item label="开机时间" :span="2">{{
+                        serverVersion['基本信息']['更新时间']
+                    }}</el-descriptions-item>
+                    <el-descriptions-item label="预订电话">{{ reginfo['booktel'] }}
+                    </el-descriptions-item>
+                    <el-descriptions-item label="授权方式">{{ reginfo['regtype'] }}
+                    </el-descriptions-item>
+                    <el-descriptions-item v-if="reginfo['regtype'] == '临时授权'" label="授权剩余时间">{{
+                    `${reginfo['ramainhours']}
                     小时` }}
-                </el-descriptions-item>
-                <el-descriptions-item v-if="reginfo['regtype'] == '临时授权'" label="授权到期时间">{{ reginfo['outdate'] }}
-                </el-descriptions-item>
-            </el-descriptions>
+                    </el-descriptions-item>
+                    <el-descriptions-item v-if="reginfo['regtype'] == '临时授权'" label="授权到期时间">{{ reginfo['outdate'] }}
+                    </el-descriptions-item>
+                </el-descriptions>
+            </div>
             <el-divider />
             <div class="infoDashboard">
                 <el-progress type="dashboard"
@@ -63,15 +71,18 @@
                 </el-progress>
                 <el-progress type="dashboard" :percentage="fyServer.ethState.percentage || 0" :color="percentageColors">
                     <template #default>
-                        <span class="percentage-value">{{ fyServer.ethState.unit == 'unknown' ? '测速中' :
-        `${fyServer.ethState.eth0Speed + fyServer.ethState.unit}/s`
-}}</span>
+                        <span class="percentage-value">{{
+                            fyServer.ethState.unit == 'unknown' ? '测速中' :
+                                `${fyServer.ethState.eth0Speed + fyServer.ethState.unit}/s`
+                        }}</span>
                         <span class="percentage-label">网卡0发送速率</span>
                     </template>
                 </el-progress>
                 <el-progress type="dashboard" :percentage="fyServer.hardDisk.percentage || 0" :color="percentageColors">
                     <template #default>
-                        <span class="percentage-value">{{ fyServer.hardDisk.remainSpace + fyServer.hardDisk.unit }}</span>
+                        <span class="percentage-value">{{
+                            fyServer.hardDisk.remainSpace + fyServer.hardDisk.unit
+                        }}</span>
                         <span class="percentage-label">剩余存储空间</span>
                     </template>
                 </el-progress>
@@ -86,30 +97,30 @@
                 <el-table-column label="状态" width="180">
                     <template #default="scope">
                         <div v-if="loadStatus[scope.$index]">{{
-        loadStatus[scope.$index].replace(/\s*/g, "").match(/状态：(\S*)负载/)![1]
-}}
+                            loadStatus[scope.$index].replace(/\s*/g, "").match(/状态：(\S*)负载/)![1]
+                        }}
                         </div>
                     </template>
                 </el-table-column>
                 <el-table-column label="IP" width="180">
                     <template #default="scope">
                         <div v-if="loadStatus[scope.$index]">{{
-        loadStatus[scope.$index].replace(/\s*/g, "").match(/ip:(\S*)状态/)![1]
-}}</div>
+                            loadStatus[scope.$index].replace(/\s*/g, "").match(/ip:(\S*)状态/)![1]
+                        }}</div>
                     </template>
                 </el-table-column>
                 <el-table-column label="负载">
                     <template #default="scope">
                         <div v-if="loadStatus[scope.$index]">{{
-        loadStatus[scope.$index].replace(/\s*/g, "").match(/负载：(\S*)预览/)![1]
-}}</div>
+                            loadStatus[scope.$index].replace(/\s*/g, "").match(/负载：(\S*)预览/)![1]
+                        }}</div>
                     </template>
                 </el-table-column>
                 <el-table-column label="预览">
                     <template #default="scope">
                         <div v-if="loadStatus[scope.$index]">{{
-        loadStatus[scope.$index].replace(/\s*/g, "").match(/预览：(\S*)连接/)![1]
-                            }}</div>
+                            loadStatus[scope.$index].replace(/\s*/g, "").match(/预览：(\S*)连接/)![1]
+                        }}</div>
                     </template>
                 </el-table-column>
             </el-table>
@@ -119,76 +130,59 @@
 
 <script lang="ts">
 // import { ElMessage } from 'element-plus';
+import { getLocalSongProportion, createMysqlPool, getFyBasicInfo, getFyRegInfo } from '@renderer/bridge/connection.js';
+import { transformCNameToHalfAngle, getFyIP } from '@renderer/bridge/appConfig.js'
 
 export default {
     name: 'fyManage',
-    emits: ['writeConfigEvent'],
     mounted() {
         this.readyToShow()
     },
     methods: {
-        getConfig(fyIP: string) {
-            this.fyServer.fyIP = fyIP
-        },
         readyToShow() {
             setTimeout(() => {
-                this.getCompanyInfo()
-                this.getLocalSongProportion()
-                this.intervalGetCPUandMemoryState = window.setInterval(this.getCPU_Memory_NetworkState, 5000)
-            }, 2000);
+                getFyIP().then(res => {
+                    this.fyServer.fyIP = res
+                    createMysqlPool(this.fyServer.fyIP)
+                    this.getCompanyInfo()
+                    this.getLocalSongProportion()
+                    this.intervalGetCPUandMemoryState = window.setInterval(this.getCPU_Memory_NetworkState, 5000)
+                }, 2000);
+            })
             setTimeout(() => {
                 this.progressShow = false
             }, 10000);
         },
-        async getCompanyInfo() {
-            const fs = require('fs')
-            const ini = require('ini')
-            const http = require('http')
-            const serverVersionSrc = `http://${this.fyServer.fyIP}:9166/download/public/version/serverversion.txt`
-            const reginfoSrc = `http://${this.fyServer.fyIP}:9166/bin/servicemanager/serverdata/reginfo.txt`
+        getCompanyInfo() {
             this.loadBaseInfoCount = 0
             this.loadingText = '连接中'
             this.loading = true
-            await http.get(serverVersionSrc, (res) => {
-                // Open file in local filesystem
-                const file = fs.createWriteStream(`serverversion.txt`);
-                // Write data into local file
-                res.pipe(file);
-                // Close the file
-                file.on('finish', () => {
-                    file.close();
-                    console.log(`serverversion.txt downloaded!`);
-                    this.loadBaseInfoCount += 1
-                    this.serverVersion = ini.parse(fs.readFileSync(process.cwd() + '/serverversion.txt', 'utf-8'))
-                });
-            }).on("error", (err) => {
-                console.log("file download error: ", err.message);
+            getFyBasicInfo(this.fyServer.fyIP).then(res => {
+                this.serverVersion = res
+                this.loadBaseInfoCount += 1
+            }).catch((err: any) => {
                 this.loading = false
-            });
-            await http.get(reginfoSrc, (res) => {
-                const file = fs.createWriteStream(`reginfo.txt`);
-                res.pipe(file);
-                file.on('finish', () => {
-                    file.close();
-                    console.log(`reginfo.txt downloaded!`, this.reginfo);
-                    this.loadBaseInfoCount += 1
-                    window.clearInterval(this.loadStatusTimer)
-                    this.reginfo = ini.parse(fs.readFileSync(process.cwd() + '/reginfo.txt', 'utf-8'))
-                    this.$emit('writeConfigEvent', 'appConfig', 'fyIP', this.fyServer.fyIP)
-                    this.show = true
-                    if (this.reginfo['dogid'].slice(0, 4) == '0349' || this.reginfo['dogid'].slice(0, 4) == '0749') {
+                console.log("file download error: ", err);
+            })
+            getFyRegInfo(this.fyServer.fyIP).then(res => {
+                this.loadBaseInfoCount += 1
+                window.clearInterval(this.loadStatusTimer)
+                this.reginfo = res
+                this.show = true
+                this.reginfo['regname'] = transformCNameToHalfAngle(this.reginfo['regname'])
+                switch (this.reginfo['dogid'].slice(0, 4)) {
+                    case '0349' || '0749':
                         this.getLoadStatus()
                         this.loadStatusTimer = window.setInterval(this.getLoadStatus, 5000)
-                    }
-                    else if (this.reginfo['dogid'].slice(0, 4) == '0849') {
+                        break
+                    case '0849':
                         this.getLoadStatusNew()
                         this.loadStatusTimer = window.setInterval(this.getLoadStatusNew, 5000)
-                    }
-                });
-            }).on("error", (err) => {
-                console.log("file download error: ", err.message);
+                }
+            }).catch((err: any) => {
                 this.loading = false
-            });
+                console.log("file download error: ", err);
+            })
         },
         async getLoadStatus() {
             const loadStatusFile = `http://${this.fyServer.fyIP}:9166/bin/logstation/log/服务器负载.log`
@@ -200,7 +194,7 @@ export default {
                 await file.on('finish', () => {
                     file.close();
                     this.loadStatus = fs.readFileSync(process.cwd() + '/loadStatus.txt', 'utf-8').split('\r\n')
-                    let loadStatusResult: Array<string> = []
+                    let loadStatusResult: string[] = []
                     this.loadStatus.forEach((item) => {
                         if (item.includes('---- 状态')) loadStatusResult.push(item.slice(0, 16) + ' ip:')
                         else if (item.includes('负载')) loadStatusResult[loadStatusResult.length - 1] += item
@@ -223,7 +217,7 @@ export default {
                 file.on('finish', () => {
                     file.close();
                     this.loadStatus = fs.readFileSync(process.cwd() + '/loadStatus.txt', 'utf-8').split('\r\n')
-                    var loadStatusResult: Array<string> = []
+                    var loadStatusResult: string[] = []
                     this.loadStatus.forEach((item) => {
                         loadStatusResult.push(item.slice(0, 15) + 'ip:' + item.slice(16))
                     })
@@ -236,43 +230,12 @@ export default {
             });
         },
         getLocalSongProportion() {
-            var mysql = require('mysql')
-            var connection = mysql.createConnection({
-                host: this.fyServer.fyIP,
-                user: 'admin',
-                password: 'admin',
-                database: 'eVideoKTV'
+            getLocalSongProportion().then((res: any) => {
+                this.fyServer.totalSongCount = res.totalSongCount
+                this.fyServer.localSongCount = res.localSongCount
+                this.fyServer.totalScoreSongCount = res.totalScoreSongCount
+                this.fyServer.localScoreSongCount = res.localScoreSongCount
             })
-            connection.connect();
-            connection.query('SELECT COUNT(*) FROM FY_SONGINFO', (error, results) => {
-                if (error) {
-                    // ElMessage.error({ message: `获取所有歌曲数量失败: ${error}`, offset: 50 })
-                    return
-                }
-                this.fyServer.totalSongCount = results[0]['COUNT(*)']
-            });
-            connection.query('SELECT COUNT(*) FROM FY_SONGINFO WHERE FileCount>0', (error, results) => {
-                if (error) {
-                    // ElMessage.error({ message: `获取本地歌曲数量失败: ${error}`, offset: 50 })
-                    return
-                }
-                this.fyServer.localSongCount = results[0]['COUNT(*)']
-            });
-            connection.query('SELECT COUNT(*) FROM FY_SONGINFO WHERE IsMark=0', (error, results) => {
-                if (error) {
-                    // ElMessage.error({ message: `获取所有评分歌曲数量失败: ${error}`, offset: 50 })
-                    return
-                }
-                this.fyServer.totalScoreSongCount = results[0]['COUNT(*)']
-            });
-            connection.query('SELECT COUNT(*) FROM FY_SONGINFO WHERE IsMark=0 AND FileCount>0', (error, results) => {
-                if (error) {
-                    // ElMessage.error({ message: `获取本地评分歌曲数量失败: ${error}`, offset: 50 })
-                    return
-                }
-                this.fyServer.localScoreSongCount = results[0]['COUNT(*)']
-            });
-            connection.end();
         },
         async getCPU_Memory_NetworkState() {
             const { Telnet } = require('telnet-client')
@@ -284,9 +247,26 @@ export default {
                 username: 'root',
                 password: '123456'
             }
-            await telnetConnection.connect(params)
+            // 如果连接失败次数超过5次，则清除定时器，展示连接失败页面
+            if (this.connectErrorCount == 5) {
+                window.clearInterval(this.intervalGetCPUandMemoryState)
+                window.clearInterval(this.loadStatusTimer)
+                this.show = false
+                this.loadBaseInfoCount = 0
+                this.progressShow = true
+                this.connectErrorCount = 0
+            }
+            try {
+                await telnetConnection.connect(params)
+            }
+            catch (err) {
+                this.connectErrorCount += 1
+                if (this.loadBaseInfoCount == 0) window.clearInterval(this.intervalGetCPUandMemoryState)
+            }
             await telnetConnection.exec('top -n 1', (err: any, response: string) => {
-                if (err) return err
+                if (err) {
+                    return err
+                }
                 const result = response.split('\n')
                 this.fyServer.CPU.used = parseInt(result[1].replace(/\s*/g, "").match(/CPU:(\S*)%usr/)![1])
                 this.fyServer.memory.used = parseInt(result[0].replace(/\s*/g, "").match(/Mem:(\S*)Kused/)![1])
@@ -297,44 +277,44 @@ export default {
                 this.fyServer.memory.percent = parseInt(((this.fyServer.memory.used - this.fyServer.memory.buffer - this.fyServer.memory.cached) / this.fyServer.memory.total * 100).toFixed())
             })
             // 通过判断单位是否为初始的空置来决定要不要检测磁盘空间，所以只执行一次检测
-            if(this.fyServer.hardDisk.unit == '')
-            await telnetConnection.exec('df', (err: any, response: string) => {
-                if (err) return err
-                let result = response.split('\n')
-                let onlyMntDiskList: Array<string> = []
-                result.forEach((res) => {
-                    if(res.includes('mnt')) onlyMntDiskList.push(res.replace(/ +/g, ' '))
-                })
-                let allMntDiskUse: number = 0
-                let allMntDiskAvailable: number = 0
-                onlyMntDiskList.forEach((res) => {
-                    let result: Array<string> = res.split(' ')
-                    allMntDiskAvailable += Number(result[3])
-                    allMntDiskUse += Number(result[4].replace('%', ''))
-                })
-                this.fyServer.hardDisk.percentage = allMntDiskUse / onlyMntDiskList.length
-                if(allMntDiskAvailable / 1024 > 1024){
-                    if(allMntDiskAvailable / 1024 / 1024 > 1024){
-                        this.fyServer.hardDisk.remainSpace = allMntDiskAvailable / 1024 / 1024 / 1024
-                        this.fyServer.hardDisk.unit = 'TB'
+            if (this.fyServer.hardDisk.unit == '')
+                await telnetConnection.exec('df', (err: any, response: string) => {
+                    if (err) return err
+                    let result = response.split('\n')
+                    let onlyMntDiskList: Array<string> = []
+                    result.forEach((res) => {
+                        if (res.includes('mnt')) onlyMntDiskList.push(res.replace(/ +/g, ' '))
+                    })
+                    let allMntDiskUse: number = 0
+                    let allMntDiskAvailable: number = 0
+                    onlyMntDiskList.forEach((res) => {
+                        let result: Array<string> = res.split(' ')
+                        allMntDiskAvailable += Number(result[3])
+                        allMntDiskUse += Number(result[4].replace('%', ''))
+                    })
+                    this.fyServer.hardDisk.percentage = allMntDiskUse / onlyMntDiskList.length
+                    if (allMntDiskAvailable / 1024 > 1024) {
+                        if (allMntDiskAvailable / 1024 / 1024 > 1024) {
+                            this.fyServer.hardDisk.remainSpace = allMntDiskAvailable / 1024 / 1024 / 1024
+                            this.fyServer.hardDisk.unit = 'TB'
+                        }
+                        else {
+                            this.fyServer.hardDisk.remainSpace = allMntDiskAvailable / 1024 / 1024
+                            this.fyServer.hardDisk.unit = 'GB'
+                        }
                     }
                     else {
-                        this.fyServer.hardDisk.remainSpace = allMntDiskAvailable / 1024 / 1024
-                        this.fyServer.hardDisk.unit = 'GB'
-                    }   
-                }
-                else {
-                    this.fyServer.hardDisk.remainSpace = allMntDiskAvailable / 1024
-                    this.fyServer.hardDisk.unit = 'MB'
-                }
-                this.fyServer.hardDisk.remainSpace = Number(this.fyServer.hardDisk.remainSpace.toFixed(1))
-            })
+                        this.fyServer.hardDisk.remainSpace = allMntDiskAvailable / 1024
+                        this.fyServer.hardDisk.unit = 'MB'
+                    }
+                    this.fyServer.hardDisk.remainSpace = Number(this.fyServer.hardDisk.remainSpace.toFixed(1))
+                })
             await telnetConnection.exec('ifconfig eth0', (err: any, response: string) => {
                 if (err) return err
                 const resList = response.split('\n')
                 try {
                     resList.forEach((res, index) => {
-                        if(res.includes('RX bytes')) throw index
+                        if (res.includes('RX bytes')) throw index
                     })
                 }
                 catch (index: any) {
@@ -368,6 +348,7 @@ export default {
         return {
             show: false,
             progressShow: true,
+            connectErrorCount: 0,
             fyServer: {
                 fyIP: '192.168.10.2',
                 totalSongCount: 0,
@@ -403,7 +384,7 @@ export default {
                 { color: '#e6a23c', percentage: 80 },
                 { color: '#f56c6c', percentage: 100 },
             ],
-            intervalGetCPUandMemoryState: 0,
+            intervalGetCPUandMemoryState: 0, // interval 1
             serverVersion: {
                 '基本信息': {
                     '服务器名称': '',
@@ -420,7 +401,7 @@ export default {
             loadStatus: [''],
             loading: false,
             loadingText: '',
-            loadStatusTimer: 0
+            loadStatusTimer: 0, // interval 2
         }
     },
     props: ['appConfig']
@@ -460,5 +441,31 @@ export default {
     display: flex;
     justify-content: space-around;
     margin: 10px 0;
+}
+
+.fyinfo-header {
+    display: flex;
+}
+
+.fyinfo-header .device-pic {
+    width: 160px;
+    background-color: #1d1e1f;
+    border-radius: 10%;
+    margin: 0 10px 15px 0;
+    display: flex;
+    font-size: 17px;
+    font-weight: bo;
+    color: #cccccc;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+}
+
+.fyinfo-header .device-pic div:nth-child(3) {
+    font-size: 13px;
+}
+
+.fyinfo-header .text {
+    margin-left: 10px;
 }
 </style>

@@ -1,8 +1,10 @@
 import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import * as path from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
+const windowStateKeeper = require('electron-window-state')
 
 let mainWindow
+let fyMonitorWindow
 function createWindow(): void {
   // Create the browser window.
   mainWindow = new BrowserWindow({
@@ -24,7 +26,8 @@ function createWindow(): void {
       preload: path.join(__dirname, '../preload/index.js'),
       sandbox: false,
       nodeIntegration: true,
-      contextIsolation: false
+      contextIsolation: false,
+      webviewTag: true,
     }
   })
 
@@ -39,26 +42,72 @@ function createWindow(): void {
     e.preventDefault()
     mainWindow.webContents.send("close")
   })
-  ipcMain.on('destroy', () => {
+  ipcMain.handle('destroy', () => {
     mainWindow.destroy()
   })
-  ipcMain.on("window-min", () => {
+  ipcMain.handle("window-min", () => {
     mainWindow.minimize()
   });
-  ipcMain.on("window-max", () => {
+  ipcMain.handle("window-max", () => {
     if (mainWindow.isMaximized()) {
       mainWindow.restore()
     } else mainWindow.maximize()
   });
-  ipcMain.on("close", () => {
-    mainWindow.close()
+  ipcMain.handle("close", (_event, whichWindow) => {
+    if (whichWindow === 'mainWindow') mainWindow.close()
+    else if (whichWindow === 'fyMonitorWindow') fyMonitorWindow.close()
   });
-  ipcMain.on("openDev", () => {
+  ipcMain.handle("openDev", () => {
     mainWindow.webContents.openDevTools()
   })
   ipcMain.on('app_version', (event) => {
     event.sender.send('app_version', { version: app.getVersion() });
   });
+  ipcMain.handle('window-open-event', () => {
+    const winState = new windowStateKeeper({
+      defaultHeight: 450,
+      defaultWidth: 350,
+      electronStoreOptions: {
+        name: 'fyMonitorWindow'
+      }
+    })
+    fyMonitorWindow = new BrowserWindow({
+      x: winState.x,
+      y: winState.y,
+      width: winState.width,
+      height: winState.height,
+      minWidth: 300,
+      minHeight: 400,
+      maxWidth: 500,
+      maxHeight: 600,
+      show: false,
+      frame: false,
+      autoHideMenuBar: true,
+      // parent: mainWindow,
+      transparent: true,
+      webPreferences: {
+        // preload: path.join(__dirname, '../preload/index.js'),
+        sandbox: false,
+        nodeIntegration: true,
+        contextIsolation: false
+      }
+    })
+    fyMonitorWindow.on('ready-to-show', () => fyMonitorWindow.show())
+    if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
+      fyMonitorWindow.loadURL(process.env['ELECTRON_RENDERER_URL'] + '/extraWindow.html')
+    } else {
+      fyMonitorWindow.loadFile(path.join(__dirname, '../renderer/extraWindow.html'))
+    }
+    winState.manage(fyMonitorWindow)
+  })
+  ipcMain.handle('set-always-top', (_event, status) => {
+    if(status) fyMonitorWindow.setAlwaysOnTop(true)
+    else if(!status) fyMonitorWindow.setAlwaysOnTop(false)
+  })
+  ipcMain.handle('change-mouse-penetrate-state', (_event, status) => {
+    if(status) fyMonitorWindow.setIgnoreMouseEvents(true)
+    else fyMonitorWindow.setIgnoreMouseEvents(false)
+  })
   // HMR for renderer base on electron-vite cli.
   // Load the remote URL for development or the local html file for production.
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
@@ -94,7 +143,6 @@ app.whenReady().then(() => {
   })
 
   createWindow()
-
   app.on('activate', function () {
     // On macOS it's common to re-create a window in the app when the
     // dock icon is clicked and there are no other windows open.

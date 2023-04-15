@@ -1,6 +1,6 @@
 {
   "name": "km_box",
-  "version": "2.0.0",
+  "version": "2.2.0",
   "description": "An Electron application with Vue and TypeScript",
   "main": "./out/main/index.js",
   "author": "kmservice",
@@ -22,13 +22,18 @@
   "dependencies": {
     "@electron-toolkit/preload": "^1.0.2",
     "@electron-toolkit/utils": "^1.0.2",
+    "@electron/remote": "^2.0.9",
     "electron-updater": "^4.6.5",
-    "element-plus": "^2.2.21",
+    "electron-window-state": "^5.0.3",
+    "element-plus": "2.2.36",
+    "got": "11",
     "ini": "^3.0.1",
     "mssql": "^9.0.1",
     "mysql": "^2.18.1",
     "ping": "^0.4.2",
-    "telnet-client": "^2.0.6"
+    "telnet-client": "^2.0.6",
+    "vue-marquee-text-component": "^2.0.1",
+    "vue-router": "^4.1.6"
   },
   "devDependencies": {
     "@electron-toolkit/tsconfig": "^1.0.1",

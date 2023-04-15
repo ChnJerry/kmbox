@@ -1,13 +1,13 @@
 <template>
     <div class="cards" v-if="getFyListDone == 1" v-loading="loading" :element-loading-text="loadingText">
-        <el-card class="box-card" v-for="(fy, index) in fyList" shadow="hover"
+        <el-card class="box-card" v-for="(fy, index) in fyList" :key="fy.ID" shadow="hover"
             body-style="display: flex; flex-wrap: wrap" :id="'fy' + index">
             <template #header>
                 <div class="card-header">
                     <div class="header-fyinfo">
                         <div>{{ fy.ServerName }}
                             <el-tag class="ml-2" :type="fyList[index].status == 1 ? 'success' : 'info'" size="small">{{
-                                    fyList[index].status ? '在线' : '离线'
+                                fyList[index].status ? '在线' : '离线'
                             }}</el-tag>
                         </div>
                         <div>{{ `IP: ${fy.IP1}` }}</div>
@@ -27,7 +27,8 @@
     </div>
     <!-- 重启确认对话框区域 -->
     <el-dialog v-model="dialogVisible" title="提示" width="30%" align-center center>
-        <span style="display: flex; justify-content: center">确认重启锋云服务器 <text style="color: cornflowerblue">{{ targetIP
+        <span style="display: flex; justify-content: center">确认重启锋云服务器 <text style="color: cornflowerblue">{{
+            targetIP
         }}</text> 吗？</span>
         <template #footer>
             <span class="dialog-footer">
@@ -43,12 +44,16 @@
 <script lang="ts" setup>
 import { ElMessage } from 'element-plus';
 import { onMounted, reactive, ref, onBeforeUnmount } from 'vue';
+import { getFyIP } from '@renderer/bridge/appConfig.js'
+
 let loading = ref(false)
 var loadingText = ref('正在连接')
 
 var mysql = require('mysql')
-const { fyIP } = defineProps({
-    fyIP: String
+let fyIP = ref('')
+getFyIP().then(res => {
+    fyIP.value = res
+    connectToFy()
 })
 const { Telnet } = require('telnet-client')
 var dialogVisible = ref(false)
@@ -97,15 +102,15 @@ let fyProgressStatus: object = reactive([
         updateservice: true
     },
 ])
-var connection = mysql.createConnection({
-    host: fyIP,
-    user: 'admin',
-    password: 'admin',
-    database: 'eVideoKTV'
-})
 var getFyListDone = ref(0)
 function connectToFy() {
     loading.value = true
+    var connection = mysql.createConnection({
+        host: fyIP.value,
+        user: 'admin',
+        password: 'admin',
+        database: 'eVideoKTV'
+    })
     connection.connect();
     connection.query('SELECT ID,IP1,ServerName FROM FY_SERVER WHERE ServerType=0 OR ServerType=1 AND OnLine=0 AND Usable1=0', async function (error, results) {
         if (error) {
@@ -126,8 +131,8 @@ function connectToFy() {
             }
         }
         getFyListDone.value = 1
-        await getFysModel()
-        await telnetToFy()
+        getFysModel()
+        telnetToFy()
         intervalTelnetFy = window.setInterval(telnetToFy, 5000)
     });
     connection.end();
@@ -296,7 +301,6 @@ async function changeServiceStatus(whichServer: number, serviceName: string) {
 }
 
 onMounted(() => {
-    connectToFy()
 })
 onBeforeUnmount(() => {
     window.clearInterval(intervalTelnetFy)

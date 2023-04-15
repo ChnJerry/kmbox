@@ -23,7 +23,7 @@ win:
   executableName: terminal_remote_control
 nsis:
   artifactName: ${name}-${version}-setup.${ext}
-  shortcutName: 远程控制利云终端
+  shortcutName: K米商家助手
   uninstallDisplayName: ${productName}
   createDesktopShortcut: always
   # oneClick: false

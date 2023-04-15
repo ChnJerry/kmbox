@@ -1,83 +1,95 @@
 <template>
-    <el-form :inline="true" :model="form" class="demo-form-inline" :disabled="!getBasicInfoDone" id="searchForm">
-        <el-form-item label="歌曲编号">
-            <el-input v-model="form.songID" clearable @keyup.enter="submitSearch" />
-        </el-form-item>
-        <el-form-item label="歌曲名称">
-            <el-input v-model="form.songName" clearable @keyup.enter="submitSearch" />
-        </el-form-item>
-        <el-form-item label="歌手名称">
-            <el-input v-model="form.singer" clearable @keyup.enter="submitSearch" />
-        </el-form-item>
-        <el-form-item label="点播率≤">
-            <el-input v-model="form.ranks" clearable @keyup.enter="submitSearch" />
-        </el-form-item>
-        <el-form-item label="歌曲语种">
-            <el-select v-model="form.songLanguage" clearable>
-                <el-option v-for="item in (songLanguage as any)" :label="item.LanguageName" :value="item.ID" />
-            </el-select>
-        </el-form-item>
-        <el-form-item label="歌曲类型">
-            <el-select v-model="form.songType" clearable>
-                <el-option v-for="item in (songType as any)" :label="item.TypeName" :value="item.ID" />
-            </el-select>
-        </el-form-item>
-        <el-form-item label="歌曲版本">
-            <el-select v-model="form.VerID" clearable>
-                <el-option v-for="item in (songVersion as any)" :label="item.TypeName" :value="item.ID" />
-            </el-select>
-        </el-form-item>
-        <el-form-item label="文件数量">
-            <el-select v-model="form.fileCount" clearable>
-                <el-option label="大于0" value='>' />
-                <el-option label="等于0" value='=' />
-            </el-select>
-        </el-form-item>
-        <el-form-item label="评分可用">
-            <el-select v-model="form.isMark" clearable>
-                <el-option label="有评分" value='0' />
-                <el-option label="无评分" value='1' />
-            </el-select>
-        </el-form-item>
-        <el-form-item label="歌曲状态">
-            <el-select v-model="form.isHide" clearable>
-                <el-option label="启用" value='0' />
-                <el-option label="禁用" value='1' />
-            </el-select>
-        </el-form-item>
-        <el-form-item>
-            <el-button type="primary" @click="submitSearch" :loading="loading">查询</el-button>
-            <el-button type="info" @click="clearForm">重置</el-button>
-        </el-form-item>
-    </el-form>
-    <el-auto-resizer>
-        <template #default="{ width }">
-            <transition name="el-zoom-in-center">
-                <el-table-v2 v-if="searchDone == 1" :columns="columns" :data="searchResult" :width="width"
-                    :height="tableHeight" :footer-height="50" fixed>
-                    <template #footer>
-                        <el-pagination :page-sizes="[1000, 2000]" layout="total, prev, pager, next, jumper"
-                            :total="resultCount" :page-size="1000" v-model:current-page="currentPage" @current-change="handleCurrentChange" />
-                    </template>
-                    <template #empty>
-                        <div class="flex items-center justify-center h-100%">
-                            <el-empty />
-                        </div>
-                    </template>
-                </el-table-v2>
-            </transition>
-        </template>
-    </el-auto-resizer>
+    <div class="search-song">
+        <el-form :inline="true" :model="form" class="demo-form-inline search-form" v-if="getBasicInfoDone">
+            <el-form-item label="歌曲编号">
+                <el-input v-model="form.songID" clearable @keyup.enter="submitSearch" />
+            </el-form-item>
+            <el-form-item label="歌曲名称">
+                <el-input v-model="form.songName" clearable @keyup.enter="submitSearch" />
+            </el-form-item>
+            <el-form-item label="歌手名称">
+                <el-input v-model="form.singer" clearable @keyup.enter="submitSearch" />
+            </el-form-item>
+            <el-form-item label="点播率≤">
+                <el-input v-model="form.ranks" clearable @keyup.enter="submitSearch" />
+            </el-form-item>
+            <el-form-item label="歌曲语种">
+                <el-select v-model="form.songLanguage" clearable>
+                    <el-option v-for="item in (songLanguage as any)" :label="item.LanguageName" :value="item.ID" />
+                </el-select>
+            </el-form-item>
+            <el-form-item label="歌曲类型">
+                <el-select v-model="form.songType" clearable>
+                    <el-option v-for="item in (songType as any)" :label="item.TypeName" :value="item.ID" />
+                </el-select>
+            </el-form-item>
+            <el-form-item label="歌曲版本">
+                <el-select v-model="form.VerID" clearable>
+                    <el-option v-for="item in (songVersion as any)" :label="item.TypeName" :value="item.ID" />
+                </el-select>
+            </el-form-item>
+            <el-form-item label="文件数量">
+                <el-select v-model="form.fileCount" clearable>
+                    <el-option label="大于0" value='>' />
+                    <el-option label="等于0" value='=' />
+                </el-select>
+            </el-form-item>
+            <el-form-item label="评分可用">
+                <el-select v-model="form.isMark" clearable>
+                    <el-option label="有评分" value='0' />
+                    <el-option label="无评分" value='1' />
+                </el-select>
+            </el-form-item>
+            <el-form-item label="歌曲状态">
+                <el-select v-model="form.isHide" clearable>
+                    <el-option label="启用" value='0' />
+                    <el-option label="禁用" value='1' />
+                </el-select>
+            </el-form-item>
+            <el-form-item>
+                <el-button type="primary" @click="submitSearch" :disabled="loading">查询</el-button>
+                <el-button type="info" @click="clearForm">重置</el-button>
+            </el-form-item>
+        </el-form>
+
+        <div class="song-info">
+            <el-auto-resizer>
+                <template #default="{ height, width }">
+                    <transition name="el-zoom-in-center">
+                        <el-table-v2 v-if="searchDone == 1" :columns="columns" :data="searchResult" :width="width"
+                            :height="height" :footer-height="50" fixed>
+                            <template #footer>
+                                <el-pagination :page-sizes="[1000, 2000]" layout="total, prev, pager, next, jumper"
+                                    :total="resultCount" :page-size="1000" v-model:current-page="currentPage"
+                                    @current-change="handleCurrentChange" />
+                            </template>
+                            <template #empty>
+                                <div class="flex items-center justify-center h-100%">
+                                    <el-empty />
+                                </div>
+                            </template>
+                        </el-table-v2>
+                    </transition>
+                </template>
+            </el-auto-resizer>
+        </div>
+    </div>
 </template>
 <script lang="ts" setup>
-import { reactive, ref, onMounted, computed } from 'vue'
+import { reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus';
+import { getFyIP } from '@renderer/bridge/appConfig.js'
 
 const loading = ref(false)
-const { fyIP } = defineProps({
-    fyIP: String
-})
-onMounted(() => {
+let fyIP = ref('')
+getFyIP().then(res => {
+    fyIP.value = res
+    connection = mysql.createConnection({
+        host: fyIP.value,
+        user: 'admin',
+        password: 'admin',
+        database: 'eVideoKTV'
+    })
     getBasicInfo()
 })
 var songLanguage = reactive({})
@@ -153,14 +165,10 @@ const columns = [
 let searchResult = reactive([])
 let resultCount = ref(0)
 var mysql = require('mysql')
-var connection = mysql.createConnection({
-    host: fyIP,
-    user: 'admin',
-    password: 'admin',
-    database: 'eVideoKTV'
-})
+
 const getBasicInfoDone = ref(false)
 const searchDone = ref(0)
+var connection
 async function getBasicInfo() {
     const songLanguageSQL = 'SELECT * FROM `eVideoKTV`.`FY_SONGLANGUAGE`'
     const songTypeSQL = 'SELECT * FROM `eVideoKTV`.`FY_SONGTYPE`'
@@ -184,7 +192,9 @@ async function getBasicInfo() {
 
 }
 var finalSQL: string = '' // 最终经过处理后的 SQL 查询语句
+// BUG 已完成 跳转到最后一页的时候偶发报错 [原因：每次提交表单时没有清空上次保存的 SQL]
 async function submitSearch() {
+    finalSQL = ''
     loading.value = true
     searchDone.value = 0
     var SQLs = {
@@ -232,7 +242,6 @@ async function runSQl(SQL: string, limit: string, origin: boolean) {
         handleSearchResults()
     })
 }
-// BUG 待处理 跳转到最后一页的时候偶发报错
 function handleSearchResults() {
     searchResult.forEach((_res, index) => {
         var songLangID = searchResult[index]['SongLanguageID1']
@@ -272,7 +281,7 @@ function handleSearchResults() {
 const currentPage = ref(1)
 const handleCurrentChange = (page: number) => {
     searchDone.value = 0
-    runSQl(finalSQL, `${(page - 1)*1000},1000`, false)
+    runSQl(finalSQL, `${(page - 1) * 1000},1000`, false)
     currentPage.value = page
 }
 function clearForm() {
@@ -280,9 +289,6 @@ function clearForm() {
         form[key] = ''
     })
 }
-const tableHeight = computed(() => {
-    return window.innerHeight - document.getElementById('searchForm')?.offsetHeight!
-})
 </script>
 <style scoped>
 .el-input {
@@ -291,5 +297,23 @@ const tableHeight = computed(() => {
 
 .el-select {
     width: 130px;
+}
+
+.search-song {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.search-form {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.song-info {
+    flex: 1;
 }
 </style>
