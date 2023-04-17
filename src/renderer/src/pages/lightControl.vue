@@ -9,7 +9,6 @@
             {{ item.roomName }}<div class="state-circle"
               :style="item.deviceOnline == 0 ? 'background-color: green' : 'background-color: gray'"></div>
             <!-- <div style="font-weight: normal;">{{ item.air[3] }}℃</div> -->
-
           </div>
           <div v-if="firstQueryAllDeviceStateDone">
             <svg v-if="item.exhaust == 1" t="1681292036262" class="icon" viewBox="0 0 1024 1024" version="1.1"
@@ -78,6 +77,7 @@
           <el-dropdown-item @click="sendOperationToMachine(item.ip, 'exhaust', item.exhaust == 1 ? 0 : 1, index)">
             {{ item.exhaust == 1 ? '关闭排风' : '打开排风' }}
           </el-dropdown-item>
+          <el-dropdown-item @click="doorLight.openDoorLightDialog(item.ip, index)">门牌灯设置</el-dropdown-item>
           <el-dropdown-item divided v-if="item.roomstatus == 1"
             @click="sendOperationToMachine(item.ip, 'scenario', 5, index)">灯光柔和</el-dropdown-item>
           <el-dropdown-item v-if="item.roomstatus == 1"
@@ -89,9 +89,9 @@
         </el-dropdown-menu>
       </template>
     </el-dropdown>
-    <el-dialog v-model="acDialogVisible" :title="`${devicesList[acDialogForm.deviceIndex].roomName} 空调控制`" width="30%">
+    <el-dialog v-model="acDialogVisible" :title="`【${devicesList[acDialogForm.deviceIndex].roomName}】 空调控制`" width="30%">
       <div class="ac-items">
-        开关：<el-switch v-model="acDialogForm.acSwitch" @change="acSwitchChange"/></div>
+        开关：<el-switch v-model="acDialogForm.acSwitch" @change="acSwitchChange" /></div>
       <div class="ac-items">模式：<el-radio-group v-model="acDialogForm.air[0]" :disabled="!acDialogForm.acSwitch">
           <el-radio :label="106">制冷</el-radio>
           <el-radio :label="107">制热</el-radio>
@@ -103,8 +103,8 @@
           <el-radio :label="140">高</el-radio>
           <el-radio :label="141">自动</el-radio>
         </el-radio-group></div>
-      <div class="ac-items">温度：<el-input style="width: 108px;" size="small" type="number" min="16" max="30" v-model="acDialogForm.air[3]"
-          :disabled="!acDialogForm.acSwitch">
+      <div class="ac-items">温度：<el-input style="width: 108px;" size="small" type="number" min="16" max="30"
+          v-model="acDialogForm.air[3]" :disabled="!acDialogForm.acSwitch">
           <template #append>℃</template>
         </el-input></div>
       <template #footer>
@@ -116,12 +116,26 @@
         </span>
       </template>
     </el-dialog>
+    <el-dialog v-model="doorLightDialogVisible" :title="`【${devicesList[doorLightForm.deviceIndex].roomName}】 门牌灯设置`"
+      width="45%">
+      <el-radio-group v-model="doorLightForm.doorLightNo">
+        <el-radio v-for="item in doorLightType" :label="item.key" style="width: 90px;">{{ item.name }}</el-radio>
+      </el-radio-group>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="doorLightDialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="doorLight.doorLightFormSubmit()">
+            确定
+          </el-button>
+        </span>
+      </template>
+    </el-dialog>
     <!-- <el-tooltip :visible="tooltipVisible" content="Bottom center" placement="bottom" effect="light" trigger="click"
       virtual-triggering :virtual-ref="triggerRef" /> -->
   </div>
 </template>
 <script lang="ts" setup>
-import { getDevicesList, queryDeviceState, getStbOrderSongList, sendOperation } from '@renderer/bridge/lightServer'
+import { getDevicesList, queryDeviceState, getStbOrderSongList, sendOperation, getAllDoorLight } from '@renderer/bridge/lightServer'
 import { getAppConfig, getGatewayIP } from '@renderer/bridge/appConfig.js'
 import { reactive, ref, onMounted, onBeforeUnmount } from 'vue'
 import { querySong, createMysqlPool } from '@renderer/bridge/connection.js';
@@ -319,7 +333,7 @@ const sendOperationToMachine = (hostIP: string, operationType: string, content: 
 const acDialogVisible = ref(false)
 const acDialogForm = reactive({
   acSwitch: false,
-  air: [0,0,0,0],
+  air: [0, 0, 0, 0],
   zkIp: '',
   deviceIndex: 0
 })
@@ -342,18 +356,62 @@ const openAcDialog = (zkIp: string, mac: string, sn: string, index: number) => {
   })
 }
 const acSwitchChange = (e) => {
-  if(e) acDialogForm.air[1] = 141
+  if (e) acDialogForm.air[1] = 141
   else acDialogForm.air[1] = 142
 }
 const acFormSubmit = () => {
-  if(acDialogForm.air[3] > 30 || acDialogForm.air[3] < 16){
+  if (acDialogForm.air[3] > 30 || acDialogForm.air[3] < 16) {
     ElMessage.error({ message: `温度请填写 16-30 的数字`, offset: 50 })
     return
   }
+  acDialogForm.air[3] = Number(acDialogForm.air[3])
   sendOperationToMachine(acDialogForm.zkIp, 'air', acDialogForm.air, acDialogForm.deviceIndex)
   acDialogVisible.value = false
 }
 
+// 门牌灯相关
+const doorLightDialogVisible = ref(false)
+let doorLightType = reactive([{
+  key: 0,
+  name: '熄灭',
+  id: 1
+}])
+const doorLightForm = reactive({
+  deviceIndex: 0,
+  doorLightNo: 0,
+  doorLightTargetIp: ''
+})
+const doorLight = {
+  openDoorLightDialog(zkIp: string, index: number) {
+    queryDeviceState(serverIP, {
+      hostIp: zkIp,
+    }).then((res: any) => {
+      if (res.ret == -1) {
+        ElMessage.error({ message: `${zkIp} 获取设备信息出错: ${res.msg}`, offset: 50 })
+        return
+      }
+      doorLightForm.doorLightNo = res.data.doorlight
+      doorLightForm.doorLightTargetIp = zkIp
+      doorLightForm.deviceIndex = index
+      if (Object.keys(doorLightType).length == 1) {
+        this.getDoorLightType()
+        return
+      }
+      doorLightDialogVisible.value = true
+    })
+
+  },
+  getDoorLightType() {
+    getAllDoorLight(serverIP).then((res: any) => {
+      doorLightType = res.data
+      doorLightDialogVisible.value = true
+    })
+  },
+  doorLightFormSubmit() {
+    sendOperationToMachine(doorLightForm.doorLightTargetIp, 'doorLight', doorLightForm.doorLightNo, doorLightForm.deviceIndex)
+    doorLightDialogVisible.value = false
+  }
+}
 const queryAllDeviceState = async () => {
   const sleep = (ms: number) => new Promise(r => setTimeout(r, ms)) // 延时函数
   for (let index = 0; index < devicesList.length; index++) {
